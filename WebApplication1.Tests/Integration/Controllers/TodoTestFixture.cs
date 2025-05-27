@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WebApplication1;
+using WebApplication1.Models;
 
 namespace WebApplication1.Tests.Integration.Controllers;
 
@@ -37,6 +38,13 @@ public class TodoTestFixture : IDisposable
         var db = scope.ServiceProvider.GetRequiredService<TodoDbContext>();
         db.Todos.RemoveRange(db.Todos);
         db.SaveChanges();
+    }
+
+    public bool Exists(Todo todo)
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TodoDbContext>();
+        return db.Todos.Any(t => t.Id == todo.Id && t.Subject == todo.Subject && t.Done == todo.Done);
     }
 
     public void Dispose()

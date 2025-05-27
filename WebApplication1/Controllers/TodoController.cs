@@ -13,14 +13,12 @@ public class TodoController : ControllerBase
     [HttpGet]
     public IActionResult GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize < 1 ? 10 : pageSize;
         var query = _db.Todos.OrderByDescending(t => t.Id);
         var total = query.Count();
         var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        // 若總數小於 pageSize，僅回傳現有數量
-        if (total < pageSize) pageSize = total;
-        return Ok(new { total, items });
+        return Ok(new PagedResult<Todo> { total = total, items = items });
     }
 
     [HttpPost]
@@ -64,5 +62,11 @@ public class TodoController : ControllerBase
         if (entity == null)
             return NotFound();
         return Ok(entity);
+    }
+
+    private class PagedResult<T>
+    {
+        public int total { get; set; }
+        public List<T> items { get; set; } = new();
     }
 }
