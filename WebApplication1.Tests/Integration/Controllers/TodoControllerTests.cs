@@ -1,21 +1,20 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit;
 
 namespace WebApplication1.Tests.Integration.Controllers;
 
-public class HomeControllerTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public class TodoControllerTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory = factory;
 
-    [Theory]
-    [InlineData("/")]
-    [InlineData("/Home/Privacy")]
-    public async Task Get_Endpoints_ReturnSuccessAndView(string url)
+    [Fact]
+    public async Task GetAll_ReturnsOkAndEmptyArray()
     {
         var client = _factory.CreateClient();
-        var response = await client.GetAsync(url);
+        var response = await client.GetAsync("/api/Todo");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.False(string.IsNullOrWhiteSpace(content));
+        Assert.Equal("[]", content.Trim());
     }
 }
