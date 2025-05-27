@@ -1,7 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+using WebApplication1;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<TodoDbContext>(options =>
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 var app = builder.Build();
 
