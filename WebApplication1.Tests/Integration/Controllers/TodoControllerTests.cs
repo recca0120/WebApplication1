@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using WebApplication1.Models;
 using Xunit;
+using Bogus;
 
 namespace WebApplication1.Tests.Integration.Controllers;
 
@@ -22,7 +23,10 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     {
         // Arrange
         var client = _factory.CreateClient();
-        var newTodo = new Todo { Subject = "test", Done = false };
+        var faker = new Faker<Todo>()
+            .RuleFor(t => t.Subject, f => f.Lorem.Sentence(3))
+            .RuleFor(t => t.Done, f => f.Random.Bool());
+        var newTodo = faker.Generate();
 
         // Act
         var response = await client.PostAsJsonAsync("/api/Todo", newTodo);
@@ -31,8 +35,8 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(created);
-        Assert.Equal("test", created!.Subject);
-        Assert.False(created.Done);
+        Assert.Equal(newTodo.Subject, created!.Subject);
+        Assert.Equal(newTodo.Done, created.Done);
         Assert.True(created.Id > 0);
     }
 
@@ -41,20 +45,24 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     {
         // Arrange
         var client = _factory.CreateClient();
-        var newTodo = new Todo { Subject = "original", Done = false };
+        var faker = new Faker<Todo>()
+            .RuleFor(t => t.Subject, f => f.Lorem.Sentence(3))
+            .RuleFor(t => t.Done, f => false);
+        var newTodo = faker.Generate();
         var createResponse = await client.PostAsJsonAsync("/api/Todo", newTodo);
         var created = await createResponse.Content.ReadFromJsonAsync<Todo>();
         Assert.NotNull(created);
+        Assert.False(created!.Done);
 
         // Act
-        var update = new Todo { Subject = "updated", Done = true };
-        var updateResponse = await client.PutAsJsonAsync($"/api/Todo/{created!.Id}", update);
+        var update = new Todo { Subject = created.Subject, Done = true };
+        var updateResponse = await client.PutAsJsonAsync($"/api/Todo/{created.Id}", update);
         var updated = await updateResponse.Content.ReadFromJsonAsync<Todo>();
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
         Assert.NotNull(updated);
-        Assert.Equal("updated", updated!.Subject);
+        Assert.Equal(update.Subject, updated!.Subject);
         Assert.True(updated.Done);
         Assert.Equal(created.Id, updated.Id);
     }
@@ -64,7 +72,10 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     {
         // Arrange
         var client = _factory.CreateClient();
-        var newTodo = new Todo { Subject = "to be deleted", Done = false };
+        var faker = new Faker<Todo>()
+            .RuleFor(t => t.Subject, f => f.Lorem.Sentence(3))
+            .RuleFor(t => t.Done, f => f.Random.Bool());
+        var newTodo = faker.Generate();
         var createResponse = await client.PostAsJsonAsync("/api/Todo", newTodo);
         var created = await createResponse.Content.ReadFromJsonAsync<Todo>();
         Assert.NotNull(created);
