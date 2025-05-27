@@ -48,7 +48,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     public async Task Create_AddsTodoAndReturnsCreated()
     {
         // Arrange
-        var newTodo = new Todo { Subject = "Test Subject", Done = false };
+        var newTodo = new Todo { Subject = "Test Subject" };
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/Todo", newTodo);
@@ -58,7 +58,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(created);
         Assert.Equal(newTodo.Subject, created!.Subject);
-        Assert.Equal(newTodo.Done, created.Done);
+        Assert.False(created.Done);
         Assert.True(created.Id > 0);
     }
 
@@ -98,11 +98,11 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.NotNull(result);
         Assert.Equal(15, result!.total);
         Assert.Equal(5, result.items.Count);
-        Assert.Equal(6, result.from); 
-        Assert.Equal(10, result.to);  
+        Assert.Equal(6, result.from);
+        Assert.Equal(10, result.to);
         Assert.Equal(2, result.current_page);
-        Assert.Equal(3, result.total_page); 
-        Assert.Equal(3, result.last_page); 
+        Assert.Equal(3, result.total_page);
+        Assert.Equal(3, result.last_page);
     }
 
     [Fact]

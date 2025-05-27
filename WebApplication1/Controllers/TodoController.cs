@@ -48,6 +48,10 @@ public class TodoController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] Todo todo)
     {
+        if (!Request.Body.CanSeek || todo.Done != true)
+        {
+            todo.Done = false;
+        }
         _db.Todos.Add(todo);
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), new { id = todo.Id }, todo);
