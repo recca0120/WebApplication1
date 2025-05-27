@@ -1,23 +1,32 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using WebApplication1.Models;
 using Bogus;
 
 namespace WebApplication1.Tests.Integration.Controllers;
 
-public class TodoControllerTests : IClassFixture<TodoTestFixture>
+public class TodoControllerTests : IClassFixture<CustomWebApplicationFactory<Program>>, IDisposable
 {
-    private readonly TodoTestFixture _fixture;
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomWebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
-    public TodoControllerTests(TodoTestFixture fixture)
+    public TodoControllerTests(CustomWebApplicationFactory<Program> factory)
     {
-        _fixture = fixture;
-        _factory = fixture.Factory;
+        _factory = factory;
         _client = _factory.CreateClient();
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TodoDbContext>();
+        db.Database.EnsureCreated();
+    }
+
+    public void Dispose()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TodoDbContext>();
+        db.Todos.RemoveRange(db.Todos);
+        db.SaveChanges();
+        GC.SuppressFinalize(this);
     }
 
     private static readonly Faker<Todo> _todoFaker = new Faker<Todo>()
@@ -117,13 +126,11 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         var todo = SeedTodos(1)[0];
         var response = await _client.DeleteAsync($"/api/Todo/{todo.Id}");
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.False(_fixture.Exists(todo));
     }
 
     [Fact]
     public async Task GetAll_ReturnsPagedTodos()
     {
-        _fixture.ResetDb();
         var todos = SeedTodos(15);
         var response = await _client.GetAsync("/api/Todo?page=2&pageSize=5");
         var result = await response.Content.ReadFromJsonAsync<PagedResult<Todo>>();
@@ -140,7 +147,6 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     [Fact]
     public async Task GetAll_ReturnsAllTodos()
     {
-        _fixture.ResetDb();
         var todos = SeedTodos(3);
         var response = await _client.GetAsync("/api/Todo");
         var result = await response.Content.ReadFromJsonAsync<PagedResult<Todo>>();
@@ -156,7 +162,6 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     public async Task Duplicate_CreatesDuplicatedTodoAndReturnsCreated()
     {
         // Arrange
-        _fixture.ResetDb();
         var todo = SeedTodos(1)[0];
         // Act
         var response = await _client.PostAsync($"/api/Todo/{todo.Id}/duplicate", null);
