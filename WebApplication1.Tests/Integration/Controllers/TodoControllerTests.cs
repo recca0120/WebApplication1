@@ -35,4 +35,27 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.False(created.Done);
         Assert.True(created.Id > 0);
     }
+
+    [Fact]
+    public async Task Update_ChangesTodoAndReturnsOk()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        var newTodo = new Todo { Subject = "original", Done = false };
+        var createResponse = await client.PostAsJsonAsync("/api/Todo", newTodo);
+        var created = await createResponse.Content.ReadFromJsonAsync<Todo>();
+        Assert.NotNull(created);
+
+        // Act
+        var update = new Todo { Subject = "updated", Done = true };
+        var updateResponse = await client.PutAsJsonAsync($"/api/Todo/{created!.Id}", update);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<Todo>();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        Assert.NotNull(updated);
+        Assert.Equal("updated", updated!.Subject);
+        Assert.True(updated.Done);
+        Assert.Equal(created.Id, updated.Id);
+    }
 }

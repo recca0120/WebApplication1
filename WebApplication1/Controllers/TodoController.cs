@@ -25,4 +25,17 @@ public class TodoController : ControllerBase
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), new { id = todo.Id }, todo);
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] Todo todo)
+    {
+        var entity = await _db.Todos.FindAsync(id);
+        if (entity == null)
+            return NotFound();
+        entity.Subject = todo.Subject;
+        entity.Done = todo.Done;
+        entity.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return Ok(entity);
+    }
 }
