@@ -38,4 +38,24 @@ public class TodoController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(entity);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var entity = await _db.Todos.FindAsync(id);
+        if (entity == null)
+            return NotFound();
+        _db.Todos.Remove(entity);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> Get(int id)
+    {
+        var entity = await _db.Todos.FindAsync(id);
+        if (entity == null)
+            return NotFound();
+        return Ok(entity);
+    }
 }

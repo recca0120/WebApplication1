@@ -58,4 +58,25 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.True(updated.Done);
         Assert.Equal(created.Id, updated.Id);
     }
+
+    [Fact]
+    public async Task Delete_RemovesTodoAndReturnsNoContent()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        var newTodo = new Todo { Subject = "to be deleted", Done = false };
+        var createResponse = await client.PostAsJsonAsync("/api/Todo", newTodo);
+        var created = await createResponse.Content.ReadFromJsonAsync<Todo>();
+        Assert.NotNull(created);
+
+        // Act
+        var deleteResponse = await client.DeleteAsync($"/api/Todo/{created!.Id}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        // 確認已刪除
+        var getResponse = await client.GetAsync($"/api/Todo/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
 }
