@@ -11,9 +11,16 @@ public class TodoController : ControllerBase
     public TodoController(TodoDbContext db) => _db = db;
 
     [HttpGet]
-    public IActionResult GetAll()
+    public IActionResult GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        return Ok(_db.Todos.ToList());
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+        var query = _db.Todos.OrderByDescending(t => t.Id);
+        var total = query.Count();
+        var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        // 若總數小於 pageSize，僅回傳現有數量
+        if (total < pageSize) pageSize = total;
+        return Ok(new { total, items });
     }
 
     [HttpPost]

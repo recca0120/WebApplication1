@@ -31,6 +31,14 @@ public class TodoTestFixture : IDisposable
         });
     }
 
+    public void ResetDb()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<TodoDbContext>();
+        db.Todos.RemoveRange(db.Todos);
+        db.SaveChanges();
+    }
+
     public void Dispose()
     {
         // 可選：釋放資源
