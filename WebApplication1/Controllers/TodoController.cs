@@ -1,4 +1,3 @@
-using System.Linq;
 using WebApplication1.Models;
 using WebApplication1.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +24,10 @@ public class TodoController : ControllerBase
         if (!ModelState.IsValid)
             return UnprocessableEntity(ModelState);
 
+        var now = DateTime.UtcNow;
         todo.Done = todo.Done == true;
+        todo.CreatedAt = now;
+        todo.UpdatedAt = now;
         _db.Todos.Add(todo);
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(Get), new { id = todo.Id }, todo);
@@ -42,6 +44,7 @@ public class TodoController : ControllerBase
         entity.Subject = todo.Subject;
         entity.Description = todo.Description;
         entity.Done = todo.Done;
+        entity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(entity);
     }
@@ -72,14 +75,16 @@ public class TodoController : ControllerBase
         var entity = await _db.Todos.FindAsync(id);
         if (entity == null)
             return NotFound();
-        var duplicated = new Todo
+        var now = DateTime.UtcNow;
+        var todo = new Todo
         {
             Subject = entity.Subject,
-            Done = entity.Done
-            // CreatedAt/UpdatedAt 由 DbContext 自動處理
+            Done = entity.Done,
+            CreatedAt = now,
+            UpdatedAt = now
         };
-        _db.Todos.Add(duplicated);
+        _db.Todos.Add(todo);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetAll), new { id = duplicated.Id }, duplicated);
+        return CreatedAtAction(nameof(Get), new { id = todo.Id }, todo);
     }
 }

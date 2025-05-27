@@ -1,4 +1,3 @@
-using System.Linq;
 using WebApplication1.Models;
 
 namespace WebApplication1.Extensions

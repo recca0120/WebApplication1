@@ -1,11 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using WebApplication1.Controllers;
 using WebApplication1.Models;
-using Xunit;
 using Bogus;
 
 namespace WebApplication1.Tests.Integration.Controllers;
@@ -63,6 +60,9 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.Equal(newTodo.Description, created.Description);
         Assert.False(created.Done);
         Assert.True(created.Id > 0);
+        Assert.True(created.CreatedAt > DateTime.MinValue);
+        Assert.True(created.UpdatedAt > DateTime.MinValue);
+        Assert.Equal(created.CreatedAt, created.UpdatedAt);
     }
 
     [Fact]
@@ -108,6 +108,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.Equal(update.Description, updated.Description);
         Assert.True(updated.Done);
         Assert.Equal(todo.Id, updated.Id);
+        Assert.True(updated.UpdatedAt > todo.UpdatedAt);
     }
 
     [Fact]
@@ -152,7 +153,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     }
 
     [Fact]
-    public async Task Duplicated_CreatesDuplicatedTodoAndReturnsCreated()
+    public async Task Duplicate_CreatesDuplicatedTodoAndReturnsCreated()
     {
         // Arrange
         _fixture.ResetDb();
@@ -167,5 +168,8 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.Equal(todo.Subject, duplicated.Subject);
         Assert.Equal(todo.Done, duplicated.Done);
         Assert.True(duplicated.CreatedAt > todo.CreatedAt || duplicated.CreatedAt == duplicated.UpdatedAt);
+        Assert.True(duplicated.CreatedAt > DateTime.MinValue);
+        Assert.True(duplicated.UpdatedAt > DateTime.MinValue);
+        Assert.Equal(duplicated.CreatedAt, duplicated.UpdatedAt);
     }
 }
