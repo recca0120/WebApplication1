@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using WebApplication1;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,13 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddDbContext<TodoDbContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
+
+// Add Swagger/OpenAPI support
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Todo API", Version = "v1" });
+});
 
 var app = builder.Build();
 
@@ -27,6 +35,17 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+// Enable Swagger middleware
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging() || app.Environment.IsProduction())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Todo API v1");
+        c.RoutePrefix = string.Empty; // Swagger UI at root
+    });
+}
 
 app.MapControllerRoute(
     name: "default",
