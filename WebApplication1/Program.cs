@@ -25,3 +25,6 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+// 讓整合測試可見
+public partial class Program { }
