@@ -25,6 +25,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
 
     private static readonly Faker<Todo> _todoFaker = new Faker<Todo>()
         .RuleFor(t => t.Subject, f => f.Lorem.Sentence(3))
+        .RuleFor(t => t.Description, f => f.Lorem.Sentence(6))
         .RuleFor(t => t.Done, f => f.Random.Bool());
 
     private List<Todo> SeedTodos(int count, bool doneRandom = true)
@@ -33,6 +34,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
             ? _todoFaker.Generate(count)
             : new Faker<Todo>()
                 .RuleFor(t => t.Subject, f => f.Lorem.Sentence(3))
+                .RuleFor(t => t.Description, f => f.Lorem.Sentence(6))
                 .RuleFor(t => t.Done, f => false)
                 .Generate(count);
         using (var scope = _factory.Services.CreateScope())
@@ -48,7 +50,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
     public async Task Create_AddsTodoAndReturnsCreated()
     {
         // Arrange
-        var newTodo = new Todo { Subject = "Test Subject" };
+        var newTodo = new Todo { Subject = "Test Subject", Description = "Test Description" };
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/Todo", newTodo);
@@ -58,8 +60,36 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(created);
         Assert.Equal(newTodo.Subject, created!.Subject);
+        Assert.Equal(newTodo.Description, created.Description);
         Assert.False(created.Done);
         Assert.True(created.Id > 0);
+    }
+
+    [Fact]
+    public async Task Create_ReturnsUnprocessableEntity_WhenSubjectIsMissing()
+    {
+        // Arrange
+        var newTodo = new Todo { Done = true };
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/Todo", newTodo);
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Subject", content);
+        Assert.Contains("Description", content);
+    }
+
+    [Fact]
+    public async Task Create_ReturnsUnprocessableEntity_WhenDescriptionIsMissing()
+    {
+        // Arrange
+        var newTodo = new Todo { Subject = "Test subject" };
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/Todo", newTodo);
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Description", content);
     }
 
     [Fact]
@@ -68,13 +98,14 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         // Arrange
         var todo = SeedTodos(1, false)[0];
         // Act
-        var update = new Todo { Subject = todo.Subject, Done = true };
+        var update = new Todo { Subject = todo.Subject, Description = todo.Description, Done = true };
         var response = await _client.PutAsJsonAsync($"/api/Todo/{todo.Id}", update);
         var updated = await response.Content.ReadFromJsonAsync<Todo>();
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(updated);
         Assert.Equal(update.Subject, updated!.Subject);
+        Assert.Equal(update.Description, updated.Description);
         Assert.True(updated.Done);
         Assert.Equal(todo.Id, updated.Id);
     }
@@ -127,7 +158,7 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         _fixture.ResetDb();
         var todo = SeedTodos(1)[0];
         // Act
-        var response = await _client.PostAsync($"/api/Todo/{todo.Id}/duplicated", null);
+        var response = await _client.PostAsync($"/api/Todo/{todo.Id}/duplicate", null);
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var duplicated = await response.Content.ReadFromJsonAsync<Todo>();
