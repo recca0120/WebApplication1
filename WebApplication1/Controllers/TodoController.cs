@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using WebApplication1.Models;
+using WebApplication1.Extensions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WebApplication1.Controllers;
 
@@ -10,39 +12,11 @@ public class TodoController : ControllerBase
     private readonly TodoDbContext _db;
     public TodoController(TodoDbContext db) => _db = db;
 
-    private class PagedResult<T>
-    {
-        public int total { get; set; }
-        public int from { get; set; }
-        public int to { get; set; }
-        public int current_page { get; set; }
-        public int total_page { get; set; }
-        public int last_page { get; set; }
-        public List<T> items { get; set; } = new();
-    }
-
     [HttpGet]
-    public IActionResult GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public IActionResult GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 15)
     {
-        page = page < 1 ? 1 : page;
-        pageSize = pageSize < 1 ? 10 : pageSize;
         var query = _db.Todos.OrderByDescending(t => t.Id);
-        var total = query.Count();
-        var items = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        var from = total == 0 ? 0 : (page - 1) * pageSize + 1;
-        var to = from + items.Count - 1;
-        var total_page = (int)Math.Ceiling(total / (double)pageSize);
-        var last_page = total_page;
-        return Ok(new PagedResult<Todo>
-        {
-            total = total,
-            from = from,
-            to = to,
-            current_page = page,
-            total_page = total_page,
-            last_page = last_page,
-            items = items
-        });
+        return Ok(query.Paginate(page, pageSize));
     }
 
     [HttpPost]
