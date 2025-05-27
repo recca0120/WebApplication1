@@ -2,5 +2,6 @@
 
 WebApplication1/bin
 WebApplication1/obj
+WebApplication1/*.db
 WebApplication1.Tests/bin
 WebApplication1.Tests/obj

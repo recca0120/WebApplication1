@@ -24,8 +24,6 @@ public class TodoController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] Todo todo)
     {
-        todo.CreatedAt = DateTime.UtcNow;
-        todo.UpdatedAt = DateTime.UtcNow;
         _db.Todos.Add(todo);
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetAll), new { id = todo.Id }, todo);
@@ -39,7 +37,6 @@ public class TodoController : ControllerBase
             return NotFound();
         entity.Subject = todo.Subject;
         entity.Done = todo.Done;
-        entity.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(entity);
     }
@@ -62,6 +59,23 @@ public class TodoController : ControllerBase
         if (entity == null)
             return NotFound();
         return Ok(entity);
+    }
+
+    [HttpPost("{id}/duplicated")]
+    public async Task<IActionResult> Duplicated(int id)
+    {
+        var entity = await _db.Todos.FindAsync(id);
+        if (entity == null)
+            return NotFound();
+        var duplicated = new Todo
+        {
+            Subject = entity.Subject,
+            Done = entity.Done
+            // CreatedAt/UpdatedAt 由 DbContext 自動處理
+        };
+        _db.Todos.Add(duplicated);
+        await _db.SaveChangesAsync();
+        return CreatedAtAction(nameof(GetAll), new { id = duplicated.Id }, duplicated);
     }
 
     private class PagedResult<T>

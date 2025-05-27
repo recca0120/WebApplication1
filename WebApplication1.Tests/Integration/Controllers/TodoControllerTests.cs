@@ -23,7 +23,6 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         _client = _factory.CreateClient();
     }
 
-    // Faker 建議改為 static readonly 欄位，避免每次產生新隨機種子造成資料重複
     private static readonly Faker<Todo> _todoFaker = new Faker<Todo>()
         .RuleFor(t => t.Subject, f => f.Lorem.Sentence(3))
         .RuleFor(t => t.Done, f => f.Random.Bool());
@@ -114,5 +113,23 @@ public class TodoControllerTests : IClassFixture<TodoTestFixture>
         {
             Assert.Contains(result.items, t => t.Subject == todo.Subject && t.Done == todo.Done);
         }
+    }
+
+    [Fact]
+    public async Task Duplicated_CreatesDuplicatedTodoAndReturnsCreated()
+    {
+        // Arrange
+        _fixture.ResetDb();
+        var todo = SeedTodos(1)[0];
+        // Act
+        var response = await _client.PostAsync($"/api/Todo/{todo.Id}/duplicated", null);
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var duplicated = await response.Content.ReadFromJsonAsync<Todo>();
+        Assert.NotNull(duplicated);
+        Assert.NotEqual(todo.Id, duplicated!.Id);
+        Assert.Equal(todo.Subject, duplicated.Subject);
+        Assert.Equal(todo.Done, duplicated.Done);
+        Assert.True(duplicated.CreatedAt > todo.CreatedAt || duplicated.CreatedAt == duplicated.UpdatedAt);
     }
 }
